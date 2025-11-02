@@ -1,11 +1,11 @@
 class Voxel {
-    constructor(x, y, z, color = 0x00ff00) {
+    constructor(x, y, z, vMass=1, vMaterial, voxelSize, color = 0x00ff00) {
         // Physics body
         const shape = new CANNON.Box(new CANNON.Vec3(voxelSize/2, voxelSize/2, voxelSize/2));
         this.body = new CANNON.Body({
-            mass: 1,
+            mass: vMass,
             position: new CANNON.Vec3(x, y, z),
-            material: voxelMaterial
+            material: vMaterial
         });
         this.body.addShape(shape);
         world.addBody(this.body);
@@ -22,14 +22,15 @@ class Voxel {
     }
     
     update() {
-        // Update visual mesh
-        this.mesh.position.copy(this.body.position);
-        this.mesh.quaternion.copy(this.body.quaternion);
-        
         // Custom gravity (optional)
         if (customGravityEnabled) {
             this.applyCustomGravity();
         }
+    }
+
+    updateaMeshRender(){
+        this.mesh.position.copy(this.body.position);
+        this.mesh.quaternion.copy(this.body.quaternion);
     }
     
     applyCustomGravity() {
@@ -42,9 +43,10 @@ class Voxel {
             const dz = other.body.position.z - this.body.position.z;
             const distSq = dx*dx + dy*dy + dz*dz;
             const dist = Math.sqrt(distSq);
-            
-            if (dist < 10 && dist > 0.1) {
-                const G = 5;
+            const G = 5;//Gravitational constant
+            const f=0.5;//Minimum gravitational force to consider
+            const r=Math.sqrt(G*this.body.mass*other.body.mass/f);//Maximum distance to apply gravity
+            if (dist < r && dist > 0.1) {
                 const force = G * this.body.mass * other.body.mass / distSq;
                 const fx = (dx / dist) * force;
                 const fy = (dy / dist) * force;

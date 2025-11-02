@@ -1,21 +1,16 @@
 class Spring {
-    constructor(voxel1, voxel2, stiffness = 100, damping = 1, breakingForce = 50,renderLine=false) {
+    constructor(voxel1, voxel2, stiffness = 100, damping = 1, render=false) {
         this.voxel1 = voxel1;
         this.voxel2 = voxel2;
         this.restLength = voxel1.body.position.distanceTo(voxel2.body.position);
         this.stiffness = stiffness;
         this.damping = damping;
         this.broken = false;
-        this.breakingForce = breakingForce;
-        
-        // Visual line
-        const material = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
-        const geometry = new THREE.BufferGeometry();
-        this.line = new THREE.Line(geometry, material);
-        this.renderLine=renderLine;
-        if (renderLine){
-            scene.add(this.line);
-        }
+        //Visual Line
+        // const material = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
+        // const geometry = new THREE.BufferGeometry();
+        // this.line = new THREE.Line(geometry, material);
+        // scene.add(this.line);
     }
     
     update() {
@@ -38,7 +33,7 @@ class Spring {
         const force = direction.scale(totalForce);
         
         // Check if force exceeds breaking threshold
-        if (Math.abs(totalForce) > this.breakingForce) {
+        if (Math.abs(totalForce) > breakingForce) {
             this.break();
             return;
         }
@@ -46,19 +41,25 @@ class Spring {
         // Apply forces
         this.voxel1.body.applyForce(force, this.voxel1.body.position);
         this.voxel2.body.applyForce(force.negate(), this.voxel2.body.position);
-        
-        if (!this.renderLine) return;
-        // Update visual line
-        const positions = new Float32Array([
-            this.voxel1.body.position.x, this.voxel1.body.position.y, this.voxel1.body.position.z,
-            this.voxel2.body.position.x, this.voxel2.body.position.y, this.voxel2.body.position.z
-        ]);
-        this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     }
+
+    // renderLine(){
+    //     if (this.render && !this.rendered) this.rendered=true;
+    //     if (this.line == null) return;
+    //     if (!this.render && this.rendered) scene.remove(this.line);
+    //     // Update visual line
+    //     const positions = new Float32Array([
+    //         this.voxel1.body.position.x, this.voxel1.body.position.y, this.voxel1.body.position.z,
+    //         this.voxel2.body.position.x, this.voxel2.body.position.y, this.voxel2.body.position.z
+    //     ]);
+    //     this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    // }
     
     break() {
         this.broken = true;
-        scene.remove(this.line);
+        // if (this.rendered){
+        //     scene.remove(this.line);
+        // }
         
         // Remove from neighbors
         const idx1 = this.voxel1.neighbors.indexOf(this.voxel2);
