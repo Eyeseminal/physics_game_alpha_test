@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voxel Game Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+    <div id="mainMenu">
+        <h1>Voxel Game</h1>
+        <button id="startButton">Start Game</button>
+    </div>
+
+    <div id="gameContainer" style="display: none;"></div>
+    <script src="js/three.min.js"></script>
+    <!--controls.js-->
+    <script>
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let moveUp = false;
+        let moveDown = false;
+
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let isLocked = false;
+
+        let yawObject, pitchObject;
+
+        function initControls(camera, domElement) {
+            // Create objects for pitch (vertical) and yaw (horizontal)
+            yawObject = new THREE.Object3D();
+            pitchObject = new THREE.Object3D();
+
+            yawObject.add(pitchObject);
+            pitchObject.add(camera);
+
+            // Pointer lock
+            domElement.addEventListener("click", () => {
+                domElement.requestPointerLock();
+            });
+
+            document.addEventListener("pointerlockchange", () => {
+                isLocked = document.pointerLockElement === domElement;
+            });
+
+            document.addEventListener("mousemove", (event) => {
+                if (!isLocked) return;
+
+                const movementX = event.movementX || 0;
+                const movementY = event.movementY || 0;
+
+                yawObject.rotation.y -= movementX * 0.002;
+                pitchObject.rotation.x -= movementY * 0.002;
+
+                // Limit vertical look (avoid flipping)
+                pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
+            });
+
+            // Keyboard input
+            document.addEventListener("keydown", (e) => {
+                switch (e.code) {
+                case "KeyW": moveForward = true; break;
+                case "KeyS": moveBackward = true; break;
+                case "KeyA": moveLeft = true; break;
+                case "KeyD": moveRight = true; break;
+                case "Space": moveUp = true; break;
+                case "ShiftLeft" : moveDown = true; break;
+                }
+            });
+
+            document.addEventListener("keyup", (e) => {
+            switch (e.code) {
+                case "KeyW": moveForward = false; break;
+                case "KeyS": moveBackward = false; break;
+                case "KeyA": moveLeft = false; break;
+                case "KeyD": moveRight = false; break;
+                case "Space": moveUp = false; break;
+                case "ShiftLeft" : moveDown = false; break;
+            }
+            });
+
+        return yawObject; // attach this to the scene
+        }
+
+        /**
+         * @param
+         */
+        function updateControls(delta) {
+            if (!isLocked) return;
+
+            const speed = 75.0;
+
+            // Dampen velocity
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= velocity.y * 10.0 * delta;
+
+            // Movement direction
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveLeft) - Number(moveRight);
+            direction.y = Number(moveUp) - Number(moveDown);
+            direction.normalize();
+
+            //Update velocity(accelerate) on input
+            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+            if (moveUp || moveDown) velocity.y += direction.y * speed * delta;
+
+            // Apply vertical movement
+            yawObject.position.y += velocity.y * delta;
+
+            // Apply movement relative to camera yaw
+            yawObject.translateX(velocity.x * delta);
+            yawObject.translateZ(velocity.z * delta);
+        }
+    </script>
+    <!--mainmenu.js-->
+    <script>
+        // Handles showing/hiding the main menu
+        document.getElementById("startButton").addEventListener("click", () => {
+            document.getElementById("mainMenu").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            // document.getElementById("gameContainer").requestPointerLock();
+
+            initScene(); // from init.js
+            renderer.domElement.requestPointerLock();
+            startGameLoop(); // from main.js
+        });
+    </script>
+    <!--init.js-->
+    <script>
+        let scene, camera, renderer, cube;
+
+        function initScene() {
+            const container = document.getElementById("gameContainer");
+
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 0, 0);
+            // camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Initialize controls
+            controlsRoot = initControls(camera, renderer.domElement);
+            scene.add(controlsRoot);
+            controlsRoot.position.set(0, 1.6, 5);
+
+            // Lighting
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 10, 7.5);
+            scene.add(light);
+
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(20, 20);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            // Cube
+            const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+            const cubeMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            cube = new THREE.Mesh(cubeGeo, cubeMat);
+            cube.position.y = 0.5;
+            scene.add(cube);
+
+            window.addEventListener("resize", onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+    <!--main.js-->
+    <script>
+        function startGameLoop() {
+            let previousTime = performance.now();
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const currentTime = performance.now();
+                const delta = (currentTime - previousTime) / 1000;
+                previousTime = currentTime;
+
+                updateControls(delta);
+
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+    </script>
+</body>
+</html>
