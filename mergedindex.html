@@ -29,24 +29,39 @@
 
         let yawObject, pitchObject;
 
+        /**
+         * Initializes first-person camera controls using a yaw → pitch → camera hierarchy.
+         * - yawObject rotates around Y (turning left/right).
+         * - pitchObject rotates around X (looking up/down).
+         * - The camera is a child of pitchObject so both rotations apply naturally.
+         *
+         * Pointer-lock and keyboard listeners are created here.
+         *
+         * @param {THREE.Camera} camera - The active scene camera.
+         * @param {HTMLElement} domElement - The DOM element receiving pointer-lock.
+         * @return {THREE.Object3D} yawObject - Root object containing the full control hierarchy.
+         */
         function initControls(camera, domElement) {
             // Create objects for pitch (vertical) and yaw (horizontal)
             yawObject = new THREE.Object3D();
             pitchObject = new THREE.Object3D();
 
+            // Hierarchy: yawObject -> pitchObject -> camera
             yawObject.add(pitchObject);
             pitchObject.add(camera);
 
-            // Pointer lock
+            // Pointer lock activation
             domElement.addEventListener("click", () => {
                 domElement.requestPointerLock();
             });
 
+            // Check when pointer lock state changes
             document.addEventListener("pointerlockchange", () => {
                 isLocked = document.pointerLockElement === domElement;
             });
 
             document.addEventListener("mousemove", (event) => {
+                //Don't trigger camera movement if mouse is not locked
                 if (!isLocked) return;
 
                 const movementX = event.movementX || 0;
@@ -78,22 +93,34 @@
                 case "KeyA": moveLeft = false; break;
                 case "KeyD": moveRight = false; break;
                 case "Space": moveUp = false; break;
-                case "ShiftLeft" : moveDown = false; break;
+                case "ShiftLeft": moveDown = false; break;
             }
             });
 
         return yawObject; // attach this to the scene
-        }
+    }
 
         /**
-         * @param
+         * Updates FPS camera movement each frame:
+         * - Applies acceleration and damping.
+         * - Uses local-space movement (translateX/Z) for proper forward/right motion.
+         * - Vertical movement modifies world-space Y.
+         *
+         * Math notes:
+         * - direction vector is normalized so diagonals do not exceed speed
+         *   length = sqrt(x² + y² + z²)
+         *   normalized = vector / length
+         *
+         * @param {number} delta - Time step in seconds since last frame.
+         * @return {void}
          */
         function updateControls(delta) {
             if (!isLocked) return;
 
             const speed = 75.0;
 
-            // Dampen velocity
+            // Apply exponential damping:
+            // v -= v * dampingFactor * dt
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.z -= velocity.z * 10.0 * delta;
             velocity.y -= velocity.y * 10.0 * delta;
@@ -102,6 +129,9 @@
             direction.z = Number(moveForward) - Number(moveBackward);
             direction.x = Number(moveLeft) - Number(moveRight);
             direction.y = Number(moveUp) - Number(moveDown);
+
+            // Normalize to avoid faster diagonal movement
+            // sqrt(x² + z² + y²) → make length = 1
             direction.normalize();
 
             //Update velocity(accelerate) on input
@@ -112,14 +142,18 @@
             // Apply vertical movement
             yawObject.position.y += velocity.y * delta;
 
-            // Apply movement relative to camera yaw
+            // Apply horizontal movement relative to camera yaw
             yawObject.translateX(velocity.x * delta);
             yawObject.translateZ(velocity.z * delta);
         }
     </script>
     <!--mainmenu.js-->
     <script>
-        // Handles showing/hiding the main menu
+        /**
+         * Handles the transition from the main menu to the game.
+         * Hides the menu, shows the game container, initializes the scene,
+         * locks pointer, then begins the animation loop.
+         */
         document.getElementById("startButton").addEventListener("click", () => {
             document.getElementById("mainMenu").style.display = "none";
             document.getElementById("gameContainer").style.display = "block";
@@ -134,6 +168,15 @@
     <script>
         let scene, camera, renderer, cube;
 
+        /**
+         * Initializes the Three.js scene:
+         * - Creates camera, scene, renderer
+         * - Builds ground and test cube
+         * - Creates directional light
+         * - Injects FPS controls and attaches them to the scene
+         *
+         * @return {void}
+         */
         function initScene() {
             const container = document.getElementById("gameContainer");
 
@@ -183,14 +226,27 @@
             window.addEventListener("resize", onWindowResize);
         }
 
+        /**
+         * Adjusts camera and renderer size when the browser window is resized.
+         *
+         * @return {void}
+         */
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
     </script>
+
     <!--main.js-->
     <script>
+        /**
+         * Starts the game loop using requestAnimationFrame.
+         * Computes delta time, updates controls, animates the cube,
+         * and renders the scene.
+         *
+         * @return {void}
+         */
         function startGameLoop() {
             let previousTime = performance.now();
 
