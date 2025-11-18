@@ -18,7 +18,7 @@
     <script>
         class octreeNode {
             constructor(x,y,z,size,material,minsize,isleaf){
-                //xyz position relative to world origin
+                //xyz position relative to world origin(+,+,+ point of cube)
                 this.x=x;
                 this.y=y;
                 this.z=z;
@@ -37,12 +37,46 @@
             /**
              * split current node into children nodes
              * @param materials list of materials to set for each child node
-             * positions of cubes for materials list
-             * 
+             * positions of cubes for materials list(positive or negative xyz for quadrant)
+             * [(+,+,+),(-,+,+),(+,+,-),(-,+,-),(+,-,+),(-,-,+),(+,-,-),(-,-,-)]
              */
             split(materials) {
+                if (this.size/2<this.minsize){
+                    return false;
+                }
                 this.isleaf=false;
-                
+                for (let i=0;i<2;i++){
+                    for (let j=0;j<2;j++){
+                        for (let k=0;k<2;k++){
+                            let tpmnode=octreeNode(this.x-k*this.size/2,this.y-i*this.size/2,this.z-j*this.size/2,materials[i*4+j*2+k]!=null ? materials[i*4+j*2+k] : this.material,this.minsize,true);
+                            this.child.push(tmpnode);
+                        }
+                    }
+                }
+            }
+            /**
+             * merge children nodes into current node
+             * @param forRendering if true, merges regardless of material, averaging colors, and doesn't actually apply changes to self
+             * @return if forRendering is true, returns merged node. Otherwise returns nothing.
+             */
+            merge(forRendering){
+                if (this.isleaf){
+                    return null;
+                }
+                if (forRendering){
+                    //TODO: implement color averaging
+                }
+                else{
+                    let commonmat=true;
+                    let firstmat=this.child[0].material;
+                    for (let i=1;i<8;i++){
+                        if (this.child[i].material!=firstmat){
+                            commonmat=false;
+                            break;
+                        }
+                        firstmat=this.child[i].material;
+                    }
+                }
             }
         }
     </script>
