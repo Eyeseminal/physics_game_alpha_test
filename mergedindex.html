@@ -48,7 +48,7 @@
                 for (let i=0;i<2;i++){
                     for (let j=0;j<2;j++){
                         for (let k=0;k<2;k++){
-                            let tpmnode=octreeNode(this.x-k*this.size/2,this.y-i*this.size/2,this.z-j*this.size/2,materials[i*4+j*2+k]!=null ? materials[i*4+j*2+k] : this.material,this.minsize,true);
+                            let tpmnode=new octreeNode(this.x-k*this.size/2,this.y-i*this.size/2,this.z-j*this.size/2,materials[i*4+j*2+k]!=null ? materials[i*4+j*2+k] : this.material,this.minsize,true);
                             this.child.push(tmpnode);
                         }
                     }
@@ -65,6 +65,9 @@
                 }
                 if (forRendering){
                     //TODO: implement color averaging
+                    let commonmat=true;
+                    let firstmat=this.child[0].material;
+                    let mergednode=new octreeNode(this.x,this.y,this.z,this.size,this.material,this.minsize,true);
                 }
                 else{
                     let commonmat=true;
@@ -75,6 +78,14 @@
                             break;
                         }
                         firstmat=this.child[i].material;
+                    }
+                    if (commonmat){
+                        this.material=firstmat;
+                        this.child=[];
+                        this.isleaf=true;
+                    }
+                    else{
+                        return null;
                     }
                 }
             }
