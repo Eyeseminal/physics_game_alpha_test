@@ -48,7 +48,7 @@
              * 7	+	+	+
              */
             split(materials) {
-                if (this.halfsize<this.minsize){
+                if (this.halfsize*2<=this.minsize){
                     return false;
                 }
                 this.isleaf=false;
@@ -66,8 +66,8 @@
                      * 001=1
                      */
                     let signX=(i & 1) ? 1:-1;
-                    let signZ=(i & 2) ? 1:-1;
-                    let signY=(i & 4) ? 1:-1;
+                    let signY=(i & 2) ? 1:-1;
+                    let signZ=(i & 4) ? 1:-1;
                     let childMaterial=materials[i] || this.material;
                     this.children[i]=new octreeNode(this.x+signX*newhalf,this.y+signY*newhalf,this.z+signZ*newhalf,newhalf,childMaterial,this.minsize,true);
 
@@ -84,7 +84,7 @@
                 }
                 if (forRendering){
                     //TODO: implement color averaging
-                    let mergednode=new octreeNode(this.x,this.y,this.z,this.size,this.material,this.minsize,true);
+                    let mergednode=new octreeNode(this.x,this.y,this.z,this.halfsize*2,this.material,this.minsize,true);
                     return mergednode;
                 }
                 //iterate children and check if materials are same
@@ -123,8 +123,8 @@
                  * 011=3
                  */
                 if (x>this.x) index|=1;
-                if (z>this.z) index|=2;
-                if (y>this.y) index|=4;
+                if (y>this.y) index|=2;
+                if (z>this.z) index|=4;
                 return this.children[index].get(x,y,z);
             }
         }
