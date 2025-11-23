@@ -14,6 +14,110 @@ body {
     transform: translate(-50%, -50%);
 }
 
+/* Pause menu full-screen overlay */
+#pauseMenu {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Pause window box */
+#pauseWindow {
+    background: #1e1e1e;
+    padding: 24px;
+    border-radius: 12px;
+    width: 360px;
+    color: #eee;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+#pauseWindow h2 {
+    margin: 0 0 10px;
+    font-size: 26px;
+    text-align: center;
+}
+
+#pauseWindow h3 {
+    margin: 4px 0;
+    font-size: 18px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 4px;
+}
+
+/* Buttons */
+#pauseWindow button {
+    background: #333;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.1s ease;
+}
+
+#pauseWindow button:hover {
+    background: #444;
+}
+
+#pauseWindow button:active {
+    background: #555;
+}
+
+/* Form inputs */
+#pauseWindow label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    color: #ccc;
+    margin: 4px 0;
+}
+
+#pauseWindow input[type="checkbox"] {
+    transform: scale(1.3);
+    cursor: pointer;
+}
+
+/* Slider styling */
+#pauseWindow input[type="range"] {
+    appearance: none;
+    width: 140px;
+    height: 6px;
+    background: #444;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+#pauseWindow input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#pauseWindow input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+
 #startButton {
     padding: 10px 20px;
     font-size: 1.2em;
