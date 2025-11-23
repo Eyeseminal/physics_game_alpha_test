@@ -29,7 +29,7 @@
                 //minimum voxel size(size of singular voxel)
                 this.minsize=minsize;
                 //children nodes
-                this.children=[];
+                this.children=null;
                 //is leaf(does octree end on this node)
                 this.isleaf=isleaf;
             }
@@ -38,14 +38,14 @@
              * split current node into children nodes
              * @param materials list of materials to set for each child node
              * positions of cubes for materials list(positive or negative xyz for quadrant)
-             * 0	-	-	-
-             * 1	+	-	-
-             * 2	-	-	+
-             * 3	+	-	+
-             * 4	-	+	-
-             * 5	+	+	-
-             * 6	-	+	+
-             * 7	+	+	+
+             * 0: - - -
+             * 1: + - -
+             * 2: - + -
+             * 3: + + -
+             * 4: - - +
+             * 5: + - +
+             * 6: - + +
+             * 7: + + +
              */
             split(materials) {
                 if (this.halfsize*2<=this.minsize){
@@ -68,7 +68,7 @@
                     let signX=(i & 1) ? 1:-1;
                     let signY=(i & 2) ? 1:-1;
                     let signZ=(i & 4) ? 1:-1;
-                    let childMaterial=materials[i] || this.material;
+                    let childMaterial=materials[i] ?? this.material;
                     this.children[i]=new octreeNode(this.x+signX*newhalf,this.y+signY*newhalf,this.z+signZ*newhalf,newhalf,childMaterial,this.minsize,true);
 
                 }
@@ -84,7 +84,7 @@
                 }
                 if (forRendering){
                     //TODO: implement color averaging
-                    let mergednode=new octreeNode(this.x,this.y,this.z,this.halfsize*2,this.material,this.minsize,true);
+                    let mergednode=new octreeNode(this.x,this.y,this.z,this.halfsize,this.material,this.minsize,true);
                     return mergednode;
                 }
                 //iterate children and check if materials are same
