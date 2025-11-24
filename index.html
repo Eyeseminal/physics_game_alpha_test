@@ -352,8 +352,21 @@
             // Hide pause menu
             document.getElementById("pauseMenu").style.display = "none";
             
-            // Re-lock pointer
-            renderer.domElement.requestPointerLock();
+            // Try to lock pointer, with retry if it fails
+            function tryLock(attempts = 0) {
+                if (attempts > 25) return; // Give up after ~1250ms
+                
+                renderer.domElement.requestPointerLock();
+                
+                // If not locked after 50ms, try again
+                setTimeout(() => {
+                    if (!isLocked) {
+                        tryLock(attempts + 1);
+                    }
+                }, 50);
+            }
+            
+            setTimeout(() => tryLock(), 50);
         }
 
         /**
