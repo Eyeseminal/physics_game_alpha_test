@@ -310,13 +310,13 @@
             velocity.z -= velocity.z * 10.0 * delta;
             velocity.y -= velocity.y * 10.0 * delta;
 
-            // Check pressed keys using the Set
-            moveForward = pressedKeys.has('KeyW');
-            moveBackward = pressedKeys.has('KeyS');
-            moveLeft = pressedKeys.has('KeyA');
-            moveRight = pressedKeys.has('KeyD');
-            moveUp = pressedKeys.has('Space');
-            moveDown = pressedKeys.has('ShiftLeft');
+            // Check pressed keys using the keybinds object
+            moveForward = pressedKeys.has(keybinds.forward);
+            moveBackward = pressedKeys.has(keybinds.backward);
+            moveLeft = pressedKeys.has(keybinds.left);
+            moveRight = pressedKeys.has(keybinds.right);
+            moveUp = pressedKeys.has(keybinds.up);
+            moveDown = pressedKeys.has(keybinds.down);
 
             direction.z = Number(moveForward) - Number(moveBackward);
             direction.x = Number(moveLeft) - Number(moveRight);
@@ -361,6 +361,165 @@
         let isPaused = false;
         let mouseSensitivity = 1.0;
         let debugMode = false;
+
+        /**
+        * Converts key codes to human-readable names
+        * @param {string} code - The event.code from keyboard event
+        * @return {string} - Readable key name
+        */
+        function getKeyDisplayName(code) {
+            // Special keys mapping
+            const specialKeys = {
+                'Space': 'Space',
+                'ShiftLeft': 'Left Shift',
+                'ShiftRight': 'Right Shift',
+                'ControlLeft': 'Left Ctrl',
+                'ControlRight': 'Right Ctrl',
+                'AltLeft': 'Left Alt',
+                'AltRight': 'Right Alt',
+                'MetaLeft': 'Left Cmd/Win',
+                'MetaRight': 'Right Cmd/Win',
+                'Enter': 'Enter',
+                'Escape': 'Escape',
+                'Backspace': 'Backspace',
+                'Tab': 'Tab',
+                'CapsLock': 'Caps Lock',
+                'ArrowUp': '↑',
+                'ArrowDown': '↓',
+                'ArrowLeft': '←',
+                'ArrowRight': '→'
+            };
+            
+            // Check if it's a special key
+            if (specialKeys[code]) {
+                return specialKeys[code];
+            }
+            
+            // Handle letter keys (KeyA -> A)
+            if (code.startsWith('Key')) {
+                return code.replace('Key', '');
+            }
+            
+            // Handle digit keys (Digit1 -> 1)
+            if (code.startsWith('Digit')) {
+                return code.replace('Digit', '');
+            }
+            
+            // Handle F-keys (F1, F2, etc.)
+            if (code.startsWith('F') && code.length <= 3) {
+                return code;
+            }
+            
+            // Default: return the code as-is
+            return code;
+        }
+
+        /**
+        * Updates all keybind buttons to show current key bindings
+        */
+        function updateKeybindButtons() {
+            const buttons = document.querySelectorAll('.keybind-button');
+            
+            buttons.forEach(button => {
+                const action = button.getAttribute('data-action');
+                const keyCode = keybinds[action];
+                button.textContent = getKeyDisplayName(keyCode);
+            });
+        }
+
+        // Track which action is currently being rebound
+        let listeningForKey = null;
+
+        /**
+         * Starts listening for a key press to rebind an action
+         * @param {string} action - The action to rebind (forward, backward, etc.)
+         * @param {HTMLElement} button - The button element that was clicked
+         */
+        function startListeningForKey(action, button) {
+            // If already listening to another button, cancel it
+            if (listeningForKey) {
+                const oldButton = document.querySelector('.keybind-button.listening');
+                if (oldButton) {
+                    oldButton.classList.remove('listening');
+                    oldButton.textContent = getKeyDisplayName(keybinds[listeningForKey]);
+                }
+            }
+            
+            // Set this button to listening state
+            listeningForKey = action;
+            button.classList.add('listening');
+            button.textContent = 'Press any key...';
+        }
+
+        /**
+         * Handles key press while in keybind listening mode
+         * @param {KeyboardEvent} e - The keyboard event
+         */
+        function handleKeybindInput(e) {
+            // Only process if we're listening for a key
+            if (!listeningForKey) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const newKey = e.code;
+            const action = listeningForKey;
+            
+            // Don't allow Escape (used for pause menu)
+            if (newKey === 'Escape') {
+                alert('Cannot bind Escape key - it\'s reserved for the pause menu!');
+                cancelListening();
+                return;
+            }
+            
+            // Check if this key is already bound to another action
+            for (let [otherAction, keyCode] of Object.entries(keybinds)) {
+                if (keyCode === newKey && otherAction !== action) {
+                    const confirm = window.confirm(
+                        `${getKeyDisplayName(newKey)} is already bound to ${otherAction}.\n` +
+                        `Do you want to swap these keybinds?`
+                    );
+                    
+                    if (confirm) {
+                        // Swap the keys
+                        keybinds[otherAction] = keybinds[action];
+                        keybinds[action] = newKey;
+                        updateKeybindButtons();
+                        cancelListening();
+                        return;
+                    } else {
+                        // Cancel the rebind
+                        cancelListening();
+                        return;
+                    }
+                }
+            }
+            
+            // Assign the new key
+            keybinds[action] = newKey;
+            
+            // Update the button
+            const button = document.querySelector(`.keybind-button[data-action="${action}"]`);
+            button.classList.remove('listening');
+            button.textContent = getKeyDisplayName(newKey);
+            
+            listeningForKey = null;
+        }
+
+        /**
+         * Cancels key listening and restores button state
+         */
+        function cancelListening() {
+            if (!listeningForKey) return;
+            
+            const button = document.querySelector(`.keybind-button[data-action="${listeningForKey}"]`);
+            if (button) {
+                button.classList.remove('listening');
+                button.textContent = getKeyDisplayName(keybinds[listeningForKey]);
+            }
+            
+            listeningForKey = null;
+        }
 
         /**
          * Shows the pause menu and displays the main pause screen
@@ -426,7 +585,6 @@
             document.getElementById("pauseMainScreen").style.display = "flex";
         }
 
-        // ADD THIS FUNCTION
         /**
         * Navigate to keybinds screen
         */
@@ -464,6 +622,26 @@
         document.getElementById("debugToggle").addEventListener("change", (e) => {
             debugMode = e.target.checked;
             console.log("Debug mode:", debugMode);
+        });
+
+        // Keybind button listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const keybindButtons = document.querySelectorAll('.keybind-button');
+            
+            keybindButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const action = button.getAttribute('data-action');
+                    startListeningForKey(action, button);
+                });
+            });
+        });
+
+        // Global keydown listener for keybind capturing
+        document.addEventListener('keydown', (e) => {
+            // If we're in listening mode, capture the key
+            if (listeningForKey) {
+                handleKeybindInput(e);
+            }
         });
     </script>
     <!--init.js-->
