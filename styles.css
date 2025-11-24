@@ -28,95 +28,103 @@ body {
     z-index: 10;
 }
 
-/* Pause window box */
-#pauseWindow {
+/* Pause menu boxes */
+.pause-screen {
     background: #1e1e1e;
-    padding: 24px;
+    padding: 32px;
     border-radius: 12px;
-    width: 360px;
+    min-width: 400px;
     color: #eee;
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
 }
 
-#pauseWindow h2 {
-    margin: 0 0 10px;
-    font-size: 26px;
+.pause-screen h2 {
+    margin: 0 0 16px;
+    font-size: 28px;
     text-align: center;
 }
 
-#pauseWindow h3 {
-    margin: 4px 0;
-    font-size: 18px;
-    border-bottom: 1px solid #444;
-    padding-bottom: 4px;
-}
-
-/* Buttons */
-#pauseWindow button {
+.pause-screen button {
     background: #333;
     color: white;
     border: none;
-    padding: 10px 16px;
+    padding: 12px 24px;
     border-radius: 6px;
     font-size: 16px;
     cursor: pointer;
     transition: 0.1s ease;
 }
 
-#pauseWindow button:hover {
+.pause-screen button:hover {
     background: #444;
 }
 
-#pauseWindow button:active {
+.pause-screen button:active {
     background: #555;
 }
 
-/* Form inputs */
-#pauseWindow label {
+/* Settings items */
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #2a2a2a;
+    border-radius: 6px;
+}
+
+.setting-item label {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 15px;
     color: #ccc;
-    margin: 4px 0;
 }
 
-#pauseWindow input[type="checkbox"] {
+.setting-item input[type="checkbox"] {
     transform: scale(1.3);
     cursor: pointer;
 }
 
 /* Slider styling */
-#pauseWindow input[type="range"] {
+.setting-item input[type="range"] {
     appearance: none;
-    width: 140px;
+    width: 180px;
     height: 6px;
     background: #444;
     border-radius: 4px;
     outline: none;
     cursor: pointer;
+    margin: 0 12px;
 }
 
-#pauseWindow input[type="range"]::-webkit-slider-thumb {
+.setting-item input[type="range"]::-webkit-slider-thumb {
     appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     background: #ddd;
     border-radius: 50%;
     cursor: pointer;
 }
 
-#pauseWindow input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+.setting-item input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
     background: #ddd;
     border-radius: 50%;
     cursor: pointer;
+    border: none;
 }
 
+#sensitivityValue {
+    font-weight: bold;
+    color: #fff;
+    min-width: 40px;
+    text-align: right;
+}
 
 #startButton {
     padding: 10px 20px;

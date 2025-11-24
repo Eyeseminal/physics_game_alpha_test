@@ -172,7 +172,6 @@
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
         let isLocked = false;
-        let gameRunning = false;
         let pressedKeys = new Set();
         // Keybinds map - stores all rebindable keys
         let keybinds = {
@@ -216,20 +215,20 @@
             document.addEventListener("pointerlockchange", () => {
                 isLocked = document.pointerLockElement === domElement;
                 // If pointer was unlocked and game is running, show pause menu
-                if (!isLocked && gameRunning) {
+                if (!isLocked && !isPaused) {
                     showPauseMenu();
                 }
             });
 
             document.addEventListener("mousemove", (event) => {
-                //Don't trigger camera movement if mouse is not locked
-                if (!isLocked) return;
+                //Don't trigger camera movement if mouse is not locked/game is paused
+                if (!isLocked || isPaused) return;
 
                 const movementX = event.movementX || 0;
                 const movementY = event.movementY || 0;
 
-                yawObject.rotation.y -= movementX * 0.002;
-                pitchObject.rotation.x -= movementY * 0.002;
+                yawObject.rotation.y -= movementX * 0.002 * mouseSensitivity;
+                pitchObject.rotation.x -= movementY * 0.002 * mouseSensitivity;
 
                 // Limit vertical look (avoid flipping)
                 pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
@@ -324,6 +323,75 @@
             startGameLoop(); // from main.js
         });
     </script>
+    <!--pausemenu.js-->
+    <script>
+        let isPaused = false;
+        let mouseSensitivity = 1.0;
+        let debugMode = false;
+
+        /**
+         * Shows the pause menu and displays the main pause screen
+         */
+        function showPauseMenu() {
+            isPaused = true;
+            
+            // Show overlay
+            document.getElementById("pauseMenu").style.display = "flex";
+            
+            // Show main screen, hide settings
+            document.getElementById("pauseMainScreen").style.display = "flex";
+            document.getElementById("pauseSettingsScreen").style.display = "none";
+        }
+
+        /**
+         * Hides the pause menu and resumes the game
+         */
+        function resumeGame() {
+            isPaused = false;
+            
+            // Hide pause menu
+            document.getElementById("pauseMenu").style.display = "none";
+            
+            // Re-lock pointer
+            renderer.domElement.requestPointerLock();
+        }
+
+        /**
+         * Navigate to settings screen
+         */
+        function showSettings() {
+            document.getElementById("pauseMainScreen").style.display = "none";
+            document.getElementById("pauseSettingsScreen").style.display = "flex";
+        }
+
+        /**
+         * Navigate back to main pause screen
+         */
+        function backToMain() {
+            document.getElementById("pauseSettingsScreen").style.display = "none";
+            document.getElementById("pauseMainScreen").style.display = "flex";
+        }
+
+        // Button listeners
+        document.getElementById("resumeButton").addEventListener("click", resumeGame);
+        document.getElementById("settingsButton").addEventListener("click", showSettings);
+        document.getElementById("backToMainButton").addEventListener("click", backToMain);
+
+        // Sensitivity slider
+        const sensitivitySlider = document.getElementById("sensitivitySlider");
+        const sensitivityValue = document.getElementById("sensitivityValue");
+        
+        sensitivitySlider.addEventListener("input", (e) => {
+            mouseSensitivity = parseFloat(e.target.value);
+            sensitivityValue.textContent = mouseSensitivity.toFixed(2);
+        });
+
+        // Debug mode toggle
+        document.getElementById("debugToggle").addEventListener("change", (e) => {
+            debugMode = e.target.checked;
+            console.log("Debug mode:", debugMode);
+        });
+    </script>
     <!--init.js-->
     <script>
         let scene, camera, renderer, cube;
@@ -412,6 +480,8 @@
 
             function animate() {
                 requestAnimationFrame(animate);
+                //skip animation if paused
+                if (isPaused) return;
 
                 const currentTime = performance.now();
                 const delta = (currentTime - previousTime) / 1000;
