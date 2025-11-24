@@ -42,6 +42,39 @@
             <button id="keybindsButton">Keybinds</button>
             <button id="backToMainButton">Back</button>
         </div>
+        <!-- Keybinds Screen -->
+        <div id="pauseKeybindsScreen" class="pause-screen" style="display:none;">
+            <h2>Keybinds</h2>
+            
+            <div class="keybind-list">
+                <div class="keybind-item">
+                    <span class="keybind-label">Move Forward:</span>
+                    <button class="keybind-button" data-action="forward">W</button>
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Move Backward:</span>
+                    <button class="keybind-button" data-action="backward">S</button>
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Move Left:</span>
+                    <button class="keybind-button" data-action="left">A</button>
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Move Right:</span>
+                    <button class="keybind-button" data-action="right">D</button>
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Move Up:</span>
+                    <button class="keybind-button" data-action="up">Space</button>
+                </div>
+                <div class="keybind-item">
+                    <span class="keybind-label">Move Down:</span>
+                    <button class="keybind-button" data-action="down">Shift</button>
+                </div>
+            </div>
+            
+            <button id="backToSettingsButton">Back</button>
+        </div>
     </div>
 
     <script src="js/three.min.js"></script>
@@ -385,10 +418,38 @@
             document.getElementById("pauseMainScreen").style.display = "flex";
         }
 
+        /**
+        * Navigate back to main pause screen
+        */
+        function backToMain() {
+            document.getElementById("pauseSettingsScreen").style.display = "none";
+            document.getElementById("pauseMainScreen").style.display = "flex";
+        }
+
+        // ADD THIS FUNCTION
+        /**
+        * Navigate to keybinds screen
+        */
+        function showKeybinds() {
+            document.getElementById("pauseSettingsScreen").style.display = "none";
+            document.getElementById("pauseKeybindsScreen").style.display = "flex";
+            updateKeybindButtons(); // Update button text to show current keys
+        }
+
+        /**
+        * Navigate back to settings from keybinds
+        */
+        function backToSettings() {
+            document.getElementById("pauseKeybindsScreen").style.display = "none";
+            document.getElementById("pauseSettingsScreen").style.display = "flex";
+        }
+
         // Button listeners
         document.getElementById("resumeButton").addEventListener("click", resumeGame);
         document.getElementById("settingsButton").addEventListener("click", showSettings);
         document.getElementById("backToMainButton").addEventListener("click", backToMain);
+        document.getElementById("keybindsButton").addEventListener("click", showKeybinds);
+        document.getElementById("backToSettingsButton").addEventListener("click", backToSettings);
 
         // Sensitivity slider
         const sensitivitySlider = document.getElementById("sensitivitySlider");
