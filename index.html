@@ -321,9 +321,17 @@
                     e.preventDefault();
                 }
                 pressedKeys.add(e.code);
+
+                // If we're in listening mode, capture the key
+                if (listeningForKey) {
+                    handleKeybindInput(e);
+                }
             });
 
             document.addEventListener("keyup", (e) => {
+                if (listeningForKey) {
+                    handleKeybindInput(e);
+                }
                 pressedKeys.delete(e.code);
             });
             return yawObject; // attach this to the scene
@@ -761,19 +769,6 @@
                     startListeningForKey(action, button);
                 });
             });
-        });
-
-        // Global keydown listener for keybind capturing
-        document.addEventListener('keydown', (e) => {
-            // If we're in listening mode, capture the key
-            if (listeningForKey) {
-                handleKeybindInput(e);
-            }
-        });
-        document.addEventListener('keyup', (e) => {
-            if (listeningForKey) {
-                handleKeybindInput(e);
-            }
         });
     </script>
     <!--init.js-->
