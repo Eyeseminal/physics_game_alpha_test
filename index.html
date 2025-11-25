@@ -424,7 +424,33 @@
                 const action = button.getAttribute('data-action');
                 const keyCode = keybinds[action];
                 button.textContent = getKeyDisplayName(keyCode);
+                
+                // Check if this key is used by multiple actions
+                const actionsWithThisKey = getActionsForKey(keyCode);
+                
+                if (actionsWithThisKey.length > 1) {
+                    // This is a duplicate - add visual indicator
+                    button.classList.add('duplicate');
+                } else {
+                    // Not a duplicate - remove indicator if it was there
+                    button.classList.remove('duplicate');
+                }
             });
+        }
+
+        /**
+         * Finds all actions that share the same keybind
+         * @param {string} keyCode - The key code to check for duplicates
+         * @return {Array} - Array of action names that use this key
+         */
+        function getActionsForKey(keyCode) {
+            const actions = [];
+            for (let [action, key] of Object.entries(keybinds)) {
+                if (key === keyCode) {
+                    actions.push(action);
+                }
+            }
+            return actions;
         }
 
         // Track which action is currently being rebound
@@ -473,25 +499,25 @@
             }
             
             // Check if this key is already bound to another action
+            let conflictingActions = [];
             for (let [otherAction, keyCode] of Object.entries(keybinds)) {
                 if (keyCode === newKey && otherAction !== action) {
-                    const confirm = window.confirm(
-                        `${getKeyDisplayName(newKey)} is already bound to ${otherAction}.\n` +
-                        `Do you want to swap these keybinds?`
-                    );
-                    
-                    if (confirm) {
-                        // Swap the keys
-                        keybinds[otherAction] = keybinds[action];
-                        keybinds[action] = newKey;
-                        updateKeybindButtons();
-                        cancelListening();
-                        return;
-                    } else {
-                        // Cancel the rebind
-                        cancelListening();
-                        return;
-                    }
+                    conflictingActions.push(otherAction);
+                }
+            }
+
+            if (conflictingActions.length > 0) {
+                const actionList = conflictingActions.join(', ');
+                const confirm = window.confirm(
+                    `${getKeyDisplayName(newKey)} is already bound to: ${actionList}\n` +
+                    `Do you want to also bind it to ${action}?\n\n` +
+                    `Both actions will trigger when you press this key.`
+                );
+                
+                if (!confirm) {
+                    // Cancel the rebind
+                    cancelListening();
+                    return;
                 }
             }
             

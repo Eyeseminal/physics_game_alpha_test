@@ -167,6 +167,23 @@ canvas {
     color: #ccc;
 }
 
+/* Duplicate keybind indicator */
+.keybind-button.duplicate {
+    border: 2px solid #ff4444;
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.4);
+}
+
+.keybind-button.duplicate:hover {
+    border-color: #ff6666;
+    box-shadow: 0 0 12px rgba(255, 68, 68, 0.6);
+}
+
+/* Make sure listening state overrides duplicate styling */
+.keybind-button.listening {
+    border-color: #f0d058 !important;
+    box-shadow: none !important;
+}
+
 .keybind-button {
     background: #444;
     color: white;
