@@ -71,14 +71,6 @@
                     <span class="keybind-label">Move Down:</span>
                     <button class="keybind-button" data-action="down">Shift</button>
                 </div>
-                <div class="keybind-item">
-                    <span class="keybind-label">Toggle FPS Counter:</span>
-                    <button class="keybind-button" data-action="toggleFPS">Not Set</button>
-                </div>
-                <div class="keybind-item">
-                    <span class="keybind-label">Toggle Octree View:</span>
-                    <button class="keybind-button" data-action="toggleOctree">Not Set</button>
-                </div>
             </div>
             
             <button id="backToSettingsButton">Back</button>
@@ -224,42 +216,6 @@
             down: 'ShiftLeft'
         };
 
-        /**
-         * Checks if a combo keybind is currently pressed
-         * @param {Array} comboArray - Array of key codes that must all be pressed
-         * @return {boolean} - True if all keys in the combo are pressed
-         */
-        function isComboPressed(comboArray) {
-            if (comboArray.length === 0) return false;
-            return comboArray.every(key => pressedKeys.has(key));
-        }
-
-        /**
-         * Checks if an action should be triggered (either single key or combo)
-         * @param {string} action - The action name (forward, backward, toggleFPS, etc.)
-         * @return {boolean} - True if the action should trigger
-         */
-        function isActionActive(action) {
-            // Check combo first (takes priority if set)
-            if (comboKeybinds[action] && comboKeybinds[action].length > 0) {
-                return isComboPressed(comboKeybinds[action]);
-            }
-            // Fall back to single key
-            return pressedKeys.has(keybinds[action]);
-        }
-
-        //combo keybinds storage
-        let comboKeybinds = {
-            forward: [],
-            backward: [],
-            left: [],
-            right: [],
-            up: [],
-            down: [],
-            toggleFPS: [],
-            toggleOctree: []
-        };
-
         let yawObject, pitchObject;
 
         /**
@@ -363,12 +319,12 @@
             velocity.y -= velocity.y * 10.0 * delta;
 
             // Check pressed keys using the keybinds object
-            moveForward = isActionActive('forward');
-            moveBackward = isActionActive('backward');
-            moveLeft = isActionActive('left');
-            moveRight = isActionActive('right');
-            moveUp = isActionActive('up');
-            moveDown = isActionActive('down');
+            moveForward = pressedKeys.has(keybinds.forward);
+            moveBackward = pressedKeys.has(keybinds.backward);
+            moveLeft = pressedKeys.has(keybinds.left);
+            moveRight = pressedKeys.has(keybinds.right);
+            moveUp = pressedKeys.has(keybinds.up);
+            moveDown = pressedKeys.has(keybinds.down);
 
             direction.z = Number(moveForward) - Number(moveBackward);
             direction.x = Number(moveLeft) - Number(moveRight);
@@ -413,23 +369,13 @@
         let isPaused = false;
         let mouseSensitivity = 1.0;
         let debugMode = false;
-        let showFPS = false;
-        let showOctree = false;
-        // Tracks which combos fired this press
-        let comboTriggered = new Set(); 
 
         /**
         * Converts key codes to human-readable names
-        * @param {string|Array} code - The event.code from keyboard event
+        * @param {string} code - The event.code from keyboard event
         * @return {string} - Readable key name
         */
         function getKeyDisplayName(code) {
-            // Handle combo arrays
-            if (Array.isArray(code)) {
-                if (code.length === 0) return 'Not Set';
-                return code.map(k => getKeyDisplayName(k)).join(' + ');
-            }
-
             // Special keys mapping
             const specialKeys = {
                 'Space': 'Space',
@@ -484,18 +430,6 @@
             
             buttons.forEach(button => {
                 const action = button.getAttribute('data-action');
-                // Check if there's a combo set
-                const combo = comboKeybinds[action];
-                const singleKey = keybinds[action];
-                
-                if (combo && combo.length > 0) {
-                    // Show combo
-                    button.textContent = getKeyDisplayName(combo);
-                } else {
-                    // Show single key
-                    button.textContent = getKeyDisplayName(singleKey);
-                }
-
                 const keyCode = keybinds[action];
                 button.textContent = getKeyDisplayName(keyCode);
                 
@@ -541,19 +475,14 @@
                 const oldButton = document.querySelector('.keybind-button.listening');
                 if (oldButton) {
                     oldButton.classList.remove('listening');
-                    const oldAction = oldButton.getAttribute('data-action');
-                    const oldCombo = comboKeybinds[oldAction];
-                    const oldSingle = keybinds[oldAction];
-                    oldButton.textContent = getKeyDisplayName(
-                        oldCombo && oldCombo.length > 0 ? oldCombo : oldSingle
-                    );
+                    oldButton.textContent = getKeyDisplayName(keybinds[listeningForKey]);
                 }
             }
             
             // Set this button to listening state
             listeningForKey = action;
             button.classList.add('listening');
-            button.textContent = 'Press any key(s)...';
+            button.textContent = 'Press any key...';
         }
 
         /**
@@ -563,19 +492,13 @@
         function handleKeybindInput(e) {
             // Only process if we're listening for a key
             if (!listeningForKey) return;
-
-            // Only trigger on keyup - this captures the full combo
-            if (e.type !== 'keyup') return;
             
             e.preventDefault();
             e.stopPropagation();
             
+            const newKey = e.code;
             const action = listeningForKey;
             
-            // Get all currently pressed keys (before this one was released)
-            const currentCombo = Array.from(pressedKeys);
-            currentCombo.push(e.code); // Add the key that was just released
-
             // Don't allow Escape (used for pause menu)
             if (newKey === 'Escape') {
                 alert('Cannot bind Escape key - it\'s reserved for the pause menu!');
@@ -583,60 +506,36 @@
                 return;
             }
             
-            // Single key or combo?
-            if (currentCombo.length === 1) {
-                // Single key binding
-                const newKey = currentCombo[0];
-                
-                // Check for conflicts
-                let conflictingActions = [];
-                for (let [otherAction, keyCode] of Object.entries(keybinds)) {
-                    if (keyCode === newKey && otherAction !== action) {
-                        conflictingActions.push(otherAction);
-                    }
+            // Check if this key is already bound to another action
+            let conflictingActions = [];
+            for (let [otherAction, keyCode] of Object.entries(keybinds)) {
+                if (keyCode === newKey && otherAction !== action) {
+                    conflictingActions.push(otherAction);
                 }
-                
-                if (conflictingActions.length > 0) {
-                    const actionList = conflictingActions.join(', ');
-                    const confirm = window.confirm(
-                        `${getKeyDisplayName(newKey)} is already bound to: ${actionList}\n` +
-                        `Do you want to also bind it to ${action}?\n\n` +
-                        `Both actions will trigger when you press this key.`
-                    );
-                    
-                    if (!confirm) {
-                        cancelListening();
-                        return;
-                    }
-                }
-                
-                // Set single key, clear combo
-                keybinds[action] = newKey;
-                comboKeybinds[action] = [];
-                
-            } else {
-                // Combo binding
+            }
+
+            if (conflictingActions.length > 0) {
+                const actionList = conflictingActions.join(', ');
                 const confirm = window.confirm(
-                    `Bind ${getKeyDisplayName(currentCombo)} to ${action}?`
+                    `${getKeyDisplayName(newKey)} is already bound to: ${actionList}\n` +
+                    `Do you want to also bind it to ${action}?\n\n` +
+                    `Both actions will trigger when you press this key.`
                 );
                 
                 if (!confirm) {
+                    // Cancel the rebind
                     cancelListening();
                     return;
                 }
-                
-                // Set combo
-                comboKeybinds[action] = currentCombo;
             }
             
-            // Update button
+            // Assign the new key
+            keybinds[action] = newKey;
+            
+            // Update the button
             const button = document.querySelector(`.keybind-button[data-action="${action}"]`);
             button.classList.remove('listening');
-            const combo = comboKeybinds[action];
-            const singleKey = keybinds[action];
-            button.textContent = getKeyDisplayName(
-                combo && combo.length > 0 ? combo : singleKey
-            );
+            button.textContent = getKeyDisplayName(newKey);
             
             listeningForKey = null;
         }
@@ -770,6 +669,14 @@
                 });
             });
         });
+
+        // Global keydown listener for keybind capturing
+        document.addEventListener('keydown', (e) => {
+            // If we're in listening mode, capture the key
+            if (listeningForKey) {
+                handleKeybindInput(e);
+            }
+        });
     </script>
     <!--init.js-->
     <script>
@@ -853,35 +760,6 @@
     <!--main.js-->
     <script>
         /**
-         * Checks for debug combo keypresses and toggles overlays
-         */
-        function checkDebugToggles() {
-            // Toggle FPS counter
-            if (isActionActive('toggleFPS')) {
-                if (!comboTriggered.has('toggleFPS')) {
-                    showFPS = !showFPS;
-                    comboTriggered.add('toggleFPS');
-                    console.log('FPS Counter:', showFPS ? 'ON' : 'OFF');
-                    updateFPSDisplay();
-                }
-            } else {
-                comboTriggered.delete('toggleFPS');
-            }
-            
-            // Toggle Octree visualizer
-            if (isActionActive('toggleOctree')) {
-                if (!comboTriggered.has('toggleOctree')) {
-                    showOctree = !showOctree;
-                    comboTriggered.add('toggleOctree');
-                    console.log('Octree Visualizer:', showOctree ? 'ON' : 'OFF');
-                    updateOctreeDisplay();
-                }
-            } else {
-                comboTriggered.delete('toggleOctree');
-            }
-        }
-
-        /**
          * Starts the game loop using requestAnimationFrame.
          * Computes delta time, updates controls, animates the cube,
          * and renders the scene.
@@ -893,10 +771,6 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-
-                // Check debug combos even when paused (but don't trigger movement)
-                checkDebugToggles();
-
                 //skip animation if paused
                 if (isPaused) return;
 
