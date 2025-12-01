@@ -348,7 +348,13 @@
 
     /* ---------- KEYBIND MENU ---------- */
 
+    /**
+    * Converts key codes to human-readable names
+    * @param {string} code - The event.code from keyboard event
+    * @return {string} - Readable key name
+    */
     function getKeyDisplayName(code) {
+        // Special keys mapping
         const specialKeys = {
             'Space': 'Space',
             'ShiftLeft': 'Left Shift',
@@ -369,14 +375,22 @@
             'ArrowLeft': '←',
             'ArrowRight': '→'
         };
+        // Check if it's a special key
         if (specialKeys[code]) return specialKeys[code];
+        // Handle letter keys (KeyA -> A)
         if (code.startsWith('Key')) return code.replace('Key', '');
+        // Handle digit keys (Digit1 -> 1)
         if (code.startsWith('Digit')) return code.replace('Digit', '');
+        // Handle F-keys (F1, F2, etc.)
         if (code.startsWith('F') && code.length <= 3) return code;
+        // Default: return the code as-is
         return code;
     }
 
 
+    /**
+    * Updates all keybind buttons to show current key bindings
+    */
     function updateKeybindButtons() {
         const buttons = document.querySelectorAll('.keybind-button');
         buttons.forEach(button => {
@@ -384,13 +398,21 @@
             const keyCode = keybinds[action];
             button.textContent = getKeyDisplayName(keyCode);
 
+            // Check if this key is used by multiple actions
             const actionsWithKey = getActionsForKey(keyCode);
+            // This is a duplicate - add visual indicator
             if (actionsWithKey.length > 1) button.classList.add('duplicate');
+            // Not a duplicate - remove indicator if it was there
             else button.classList.remove('duplicate');
         });
     }
 
 
+    /**
+     * Finds all actions that share the same keybind
+     * @param {string} keyCode - The key code to check for duplicates
+     * @return {Array} - Array of action names that use this key
+     */
     function getActionsForKey(keyCode) {
         const actions = [];
         for (let [action, key] of Object.entries(keybinds)) {
@@ -400,6 +422,11 @@
     }
 
 
+    /**
+     * Starts listening for a key press to rebind an action
+     * @param {string} action - The action to rebind (forward, backward, etc.)
+     * @param {HTMLElement} button - The button element that was clicked
+     */
     function startListeningForKey(action, button) {
         if (listeningForKey) {
             const oldButton = document.querySelector('.keybind-button.listening');
@@ -408,13 +435,19 @@
                 oldButton.textContent = getKeyDisplayName(keybinds[listeningForKey]);
             }
         }
+        // Set this button to listening state
         listeningForKey = action;
         button.classList.add('listening');
         button.textContent = 'Press any key...';
     }
 
 
+    /**
+     * Handles key press while in keybind listening mode
+     * @param {KeyboardEvent} e - The keyboard event
+     */
     function handleKeybindInput(e) {
+        // Only process if we're listening for a key
         if (!listeningForKey) return;
 
         e.preventDefault();
@@ -423,12 +456,14 @@
         const newKey = e.code;
         const action = listeningForKey;
 
+        // Don't allow Escape (used for pause menu)
         if (newKey === 'Escape') {
             alert("Cannot bind Escape key – reserved for pause menu.");
             cancelListening();
             return;
         }
 
+        // Check if this key is already bound to another action
         let conflicts = [];
         for (let [otherAction, keyCode] of Object.entries(keybinds)) {
             if (keyCode === newKey && otherAction !== action) {
@@ -443,13 +478,16 @@
                 `Bind it to ${action} also?`
             );
             if (!ok) {
+                // Cancel the rebind
                 cancelListening();
                 return;
             }
         }
 
+        // Assign the new key
         keybinds[action] = newKey;
 
+        // Update the button
         const button = document.querySelector(`.keybind-button[data-action="${action}"]`);
         button.classList.remove('listening');
         button.textContent = getKeyDisplayName(newKey);
@@ -457,7 +495,9 @@
         listeningForKey = null;
     }
 
-
+    /**
+     * Cancels key listening and restores button state
+     */
     function cancelListening() {
         if (!listeningForKey) return;
 
