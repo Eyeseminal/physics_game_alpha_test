@@ -514,20 +514,34 @@
 
     /* ---------- PAUSE MENU ---------- */
 
+    /**
+     * Shows the pause menu and displays the main pause screen
+     */
     function showPauseMenu() {
         isPaused = true;
+            
+        // Show overlay
         document.getElementById("pauseMenu").style.display = "flex";
+
+        // Show main screen, hide settings
         document.getElementById("pauseMainScreen").style.display = "flex";
         document.getElementById("pauseSettingsScreen").style.display = "none";
     }
 
+    /**
+     * Hides the pause menu and resumes the game
+     */
     function resumeGame() {
         isPaused = false;
+            
+        // Hide pause menu
         document.getElementById("pauseMenu").style.display = "none";
 
+        // Try to lock pointer, with retry if it fails
         function tryLock(attempts = 0) {
-            if (attempts > 25) return;
+            if (attempts > 25) return; // Give up after ~1250ms
             renderer.domElement.requestPointerLock();
+            // If not locked after 50ms, try again
             setTimeout(() => {
                 if (!isLocked) tryLock(attempts + 1);
             }, 50);
@@ -536,23 +550,34 @@
         setTimeout(() => tryLock(), 50);
     }
 
-
+    /**
+     * Navigate to settings screen
+     */
     function showSettings() {
         document.getElementById("pauseMainScreen").style.display = "none";
         document.getElementById("pauseSettingsScreen").style.display = "flex";
     }
 
+    /**
+    * Navigate back to main pause screen
+    */
     function backToMain() {
         document.getElementById("pauseSettingsScreen").style.display = "none";
         document.getElementById("pauseMainScreen").style.display = "flex";
     }
 
+    /**
+    * Navigate to keybinds screen
+    */
     function showKeybinds() {
         document.getElementById("pauseSettingsScreen").style.display = "none";
         document.getElementById("pauseKeybindsScreen").style.display = "flex";
-        updateKeybindButtons();
+        updateKeybindButtons(); // Update button text to show current keys
     }
 
+    /**
+    * Navigate back to settings from keybinds
+    */
     function backToSettings() {
         document.getElementById("pauseKeybindsScreen").style.display = "none";
         document.getElementById("pauseSettingsScreen").style.display = "flex";
